@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
@@ -15,8 +15,87 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      # Rebuilds the project layout from the files in the repository, even if they
+      # were uploaded flat (all in the root, without folders).
+      - name: Organize project files
+        run: |
+          set -e
+          J=launcher/src/main/java/dev/tvlauncher/home
+          R=launcher/src/main/res/values
+          M=launcher/src/main
+          mkdir -p "$J" "$R" "$M"
+          for f in MainActivity TileView GlowView HighlightView; do
+            [ -f "$f.java" ] && mv -f "$f.java" "$J/$f.java" || true
+          done
+          [ -f config.xml ] && mv -f config.xml "$R/config.xml" || true
+          [ -f styles.xml ] && mv -f styles.xml "$R/styles.xml" || true
+          [ -f AndroidManifest.xml ] && mv -f AndroidManifest.xml "$M/AndroidManifest.xml" || true
+          rm -f "build (1).gradle" download
+
+          cat > build.gradle <<'GRADLE'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          GRADLE
+
+          cat > settings.gradle <<'GRADLE'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "TvLauncher"
+          include ':launcher'
+          GRADLE
+
+          cat > gradle.properties <<'GRADLE'
+          org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+          android.nonTransitiveRClass=true
+          GRADLE
+
+          cat > launcher/build.gradle <<'GRADLE'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'dev.tvlauncher.home'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId 'dev.tvlauncher.home'
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              buildTypes {
+                  debug {
+                      debuggable true
+                  }
+              }
+          }
+          GRADLE
+
+          echo "--- project layout"
+          find . -path ./.git -prune -o -type f -not -path "./.github/*" -print | sort
+
       # Optional: the Outfit typeface (SIL Open Font License) for the clock.
-      # If this step fails, the launcher falls back to the system thin font.
       - name: Download Outfit font
         continue-on-error: true
         run: |
