@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Edit this file to customise the launcher.
+
+  dock_packages : the apps in the dock, left to right. Use package names.
+  hidden_packages: apps that never appear in the grid.
+  greeting_name : optional name shown after the greeting ("Boa noite, Ana"). Leave empty for none.
+  launcher_background: background colour (pitch black by default).
+-->
+<resources>
+    <string name="app_name">Inicio</string>
+
+    <string-array name="dock_packages">
+        <item>com.netflix.ninja</item>
+        <item>com.google.android.youtube.tv</item>
+        <item>com.amazon.amazonvideo.livingroom</item>
+        <item>com.android.vending</item>
+    </string-array>
+
+    <string-array name="hidden_packages">
+        <item>dev.tvlauncher.home</item>
+    </string-array>
+
+    <string name="greeting_name"></string>
+    <string name="greeting_morning">Bom dia</string>
+    <string name="greeting_afternoon">Boa tarde</string>
+    <string name="greeting_evening">Boa noite</string>
+
+    <string name="pill_inputs">Entradas</string>
+    <string name="pill_wifi">Wi-Fi</string>
+    <string name="pill_ethernet">Ethernet</string>
+    <string name="pill_offline">Sem rede</string>
+    <string name="pill_settings">Configurações</string>
+    <string name="msg_open_failed">Não foi possível abrir este app</string>
+
+    <color name="launcher_background">#000000</color>
+</resources>
