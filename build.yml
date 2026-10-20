@@ -6,9 +6,96 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
+      # Works whether the files were uploaded in folders or all flat in the repo root:
+      # sources are moved into place and the Gradle files are (re)written here.
+      - name: Arrange project files
+        run: |
+          set -e
+          SRC=launcher/src/main
+          mkdir -p "$SRC/java/dev/tvlauncher/home" "$SRC/res/values"
+
+          [ -f AndroidManifest.xml ] && mv -f AndroidManifest.xml "$SRC/" || true
+          for f in MainActivity TileView GlowView HighlightView; do
+            [ -f "$f.java" ] && mv -f "$f.java" "$SRC/java/dev/tvlauncher/home/" || true
+          done
+          for f in config styles; do
+            [ -f "$f.xml" ] && mv -f "$f.xml" "$SRC/res/values/" || true
+          done
+
+          cat > settings.gradle <<'EOF'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "TvLauncher"
+          include ':launcher'
+          EOF
+
+          cat > build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application' version '8.5.2' apply false
+          }
+          EOF
+
+          cat > gradle.properties <<'EOF'
+          org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+          android.nonTransitiveRClass=true
+          EOF
+
+          cat > launcher/build.gradle <<'EOF'
+          plugins {
+              id 'com.android.application'
+          }
+
+          android {
+              namespace 'dev.tvlauncher.home'
+              compileSdk 34
+
+              defaultConfig {
+                  applicationId 'dev.tvlauncher.home'
+                  minSdk 26
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+
+              buildTypes {
+                  debug {
+                      debuggable true
+                  }
+              }
+          }
+          EOF
+
+          for f in "$SRC/AndroidManifest.xml" \
+                   "$SRC/java/dev/tvlauncher/home/MainActivity.java" \
+                   "$SRC/java/dev/tvlauncher/home/TileView.java" \
+                   "$SRC/java/dev/tvlauncher/home/GlowView.java" \
+                   "$SRC/java/dev/tvlauncher/home/HighlightView.java" \
+                   "$SRC/res/values/config.xml" \
+                   "$SRC/res/values/styles.xml"; do
+            if [ ! -f "$f" ]; then echo "FALTANDO: $f"; exit 1; fi
+          done
+          find launcher -type f | sort
 
       - uses: actions/setup-java@v4
         with:
